@@ -1,0 +1,31 @@
+---
+# root계정 원격 접속 제한
+  - name: Block remote login of Root account
+    lineinfile:
+      path: /etc/security/user
+      regexp: \b(rlogin = true)\b'
+      line: rlogin = false
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    changed_when: False
+    tags: block_root
+  - debug:
+      var=command_output
+    when: {{var_isDebug}}
+    tags: block_root
+
+
+# 패스워드 복잡성 설정
+  - name: Set Password Complexity
+    lineinfile:
+      path: /etc/security/user
+      regexp: ^rlogin'
+      line: rlogin = false
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    changed_when: False
+    tags: block_root
+  - debug:
+      var=command_output.stdout_lines
+    when: ansible_distribution == 'AIX' and command_output.stdout_lines
+    tags: block_root

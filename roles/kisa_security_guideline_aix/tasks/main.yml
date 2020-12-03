@@ -1,2 +1,3 @@
 ---
 # tasks file for kisa_security_guideline_aix
+    - import_tasks: aix/account.yml
