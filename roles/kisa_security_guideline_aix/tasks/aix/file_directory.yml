@@ -1,0 +1,40 @@
+---
+# 1. root홈, 패스 디렉터리 권한 및 패스 설정
+
+  - name: find PATH line in /etc/profile
+    lineinfile:
+      path: /etc/profile
+      regexp: '\s*PATH(\s)?='
+      state: absent
+    check_mode: yes
+    when: ansible_distribution == 'AIX'
+    register: is_PATH_Exist
+
+    # for LINUX : sed -r -e 's/(.+)\.:/.:\1/' -e 's/(.)\.:/\1/g' -e 's/\.:(.+)/\1:./'
+  - name: Move "." to end of the PATH (Not Exist in /etc/profile)
+    cmd: |
+      set -o pipefail
+      echo $PATH |sed -e 's/\(.+\)\.:/.:\1/' -e 's/\(.\)\.:/\1/g' -e 's/\.:\(.+\)/\1:./' | tee -a /etc/profile
+    register: command_output
+    when: ansible_distribution == 'AIX' and not is_PATH_Exist
+    changed_when: False
+    tags: move_dot_addProfile
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: move_dot_addProfile
+  
+  - name: Move "." to end of the PATH (Exist in /etc/profile)
+    lineinfile:
+      path: /etc/profile
+      regexp: '(\s*)PATH = (.*)'
+      line: '{{item.replace}}'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX' and is_PATH_Exist
+    changed_when: False
+    tags: move_dot_addProfile
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: move_dot_addProfile

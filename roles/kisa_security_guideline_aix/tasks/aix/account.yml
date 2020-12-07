@@ -1,31 +1,64 @@
 ---
-# root계정 원격 접속 제한
+# 1. root계정 원격 접속 제한
   - name: Block remote login of Root account
     lineinfile:
       path: /etc/security/user
-      regexp: \b(rlogin = true)\b'
-      line: rlogin = false
+      regexp: '(\s*)rlogin(\s)?=(\s)?true'
+      line: '\1rlogin = false'
+      backrefs: yes
     register: command_output
     when: ansible_distribution == 'AIX'
     changed_when: False
     tags: block_root
   - debug:
-      var=command_output
-    when: {{var_isDebug}}
+      var: command_output
+    when: "{{var_isDebug}}"
     tags: block_root
 
 
-# 패스워드 복잡성 설정
+# 2. 패스워드 복잡성 설정
   - name: Set Password Complexity
     lineinfile:
       path: /etc/security/user
-      regexp: ^rlogin'
-      line: rlogin = false
+      regexp: '{{item.regexp}}'
+      line: '{{item.replace}}'
+      backrefs: yes
+    with_items: 
+      - {regexp: '(\s*)dictionlist(\s)?=', replace: '\1dictionlist = /usr/share/dict/words'}
+      - {regexp: '(\s*)histexpire(\s)?=', replace: '\1histexpire = 26'}
+      - {regexp: '(\s*)histsize(\s)?=', replace: '\1histsize = 20'}
+      - {regexp: '(\s*)maxage(\s)?=', replace: '\1maxage = 4'}
+      - {regexp: '(\s*)minage(\s)?=', replace: '\1minage = 1'}
+      - {regexp: '(\s*)maxexpired(\s)?=', replace: '\1maxexpired = 2'}
+      - {regexp: '(\s*)maxrepeats(\s)?=', replace: '\1maxrepeats = 2'}
+      - {regexp: '(\s*)minalpha(\s)?=', replace: '\1minalpha = 2'}
+      - {regexp: '(\s*)minother(\s)?=', replace: '\1minother = 2'}
+      - {regexp: '(\s*)mindiff(\s)?=', replace: '\1mindiff = 4'}
+      - {regexp: '(\s*)minlen(\s)?=', replace: '\1minlen = 8'}
+      - {regexp: '(\s*)pwdwarntime(\s)?=', replace: '\1pwdwarntime = 5'}
     register: command_output
     when: ansible_distribution == 'AIX'
     changed_when: False
-    tags: block_root
+    tags: complex_pwd
   - debug:
-      var=command_output.stdout_lines
-    when: ansible_distribution == 'AIX' and command_output.stdout_lines
-    tags: block_root
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: complex_pwd
+
+
+# 3. 계정 잠금 임계값 설정
+  - name: Set threshold of failed login
+    lineinfile:
+      path: /etc/security/user
+      regexp: '(\s*)loginretries(\s)?='
+      line: '\1loginretries = 5'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    changed_when: False
+    tags: login_threshold
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: login_threshold
+
