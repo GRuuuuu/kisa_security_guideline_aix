@@ -8,7 +8,6 @@
       backrefs: yes
     register: command_output
     when: ansible_distribution == 'AIX'
-    changed_when: False
     tags: block_root
   - debug:
       var: command_output
@@ -38,7 +37,6 @@
       - {regexp: '(\s*)pwdwarntime(\s)?=', replace: '\1pwdwarntime = 5'}
     register: command_output
     when: ansible_distribution == 'AIX'
-    changed_when: False
     tags: complex_pwd
   - debug:
       var: command_output
@@ -55,7 +53,6 @@
       backrefs: yes
     register: command_output
     when: ansible_distribution == 'AIX'
-    changed_when: False
     tags: login_threshold
   - debug:
       var: command_output

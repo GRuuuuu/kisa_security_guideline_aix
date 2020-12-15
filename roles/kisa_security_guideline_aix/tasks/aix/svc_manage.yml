@@ -1,0 +1,22 @@
+---
+# 1. Finger 서비스 비활성화
+  - name: comment finger service 
+    command: sed -e 's/^[^#]\(.*\)\+\(.*\)//' -e 's/^\+\(.*\)//' /etc/hosts.equiv |tee hosts.equiv
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    changed_when: False
+    tags: comment_finger
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: comment_finger
+
+  - name: Restart service inetd
+    service:
+      name: inetd
+      state: restarted
+
+
+
+
+# 2. Anonymous FTP 비활성화
