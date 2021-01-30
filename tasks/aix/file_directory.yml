@@ -119,7 +119,7 @@
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_etcpasswd
+    tags: chmod_secpasswd
 
 
 
@@ -263,7 +263,6 @@
     command: find / -type f -perm -2 -exec ls -al {} \;
     register: filelist
     when: ansible_distribution == 'AIX'
-    changed_when: False
     ignore_errors: True
     tags: find_world_writable
 
@@ -277,8 +276,8 @@
         ***********************************************************************************
         * # 11. Find world writable file                                                  *
         *                                                                                 *
-        * World writable file can written by anyone.                                      *
-        * If you want, Remove these files or Remove Write Permissions for Users.          *
+        * World writable file can be written by anyone.                                   *
+        * If you want, Remove these files or Remove Write Permissions.                    *
         ***********************************************************************************
         {{filelist.stdout}}
     delegate_to: 127.0.0.1
@@ -300,8 +299,8 @@
         ***********************************************************************************
         * # 11. Find world writable file                                                  *
         *                                                                                 *
-        * World writable file can written by anyone.                                      *
-        * If you want, Remove these files or Remove Write Permissions for Users.          *
+        * World writable file can be written by anyone.                                   *
+        * If you want, Remove these files or Remove Write Permissions.                    *
         ***********************************************************************************
           NOT DETECTED!
     delegate_to: 127.0.0.1
@@ -321,7 +320,6 @@
     command: find /dev -type f -exec ls -l {} \; |grep "            " |awk '{print $9}'
     register: devfilelist
     when: ansible_distribution == 'AIX'
-    changed_when: False
     ignore_errors: True
     tags: find_dev
 
