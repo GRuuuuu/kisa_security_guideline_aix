@@ -1,5 +1,5 @@
 ---
 # defaults file for kisa_security_guideline_aix
 
-# Debug?
   var_isDebug: "True"
+  apche_home_dir: ""

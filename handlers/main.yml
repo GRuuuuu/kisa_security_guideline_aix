@@ -1,2 +1,7 @@
 ---
 # handlers file for kisa_security_guideline_aix
+handlers:
+  - name: Restart service inetd
+    service:
+      name: inetd
+      state: restarted
