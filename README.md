@@ -1,38 +1,43 @@
-Role Name
+kisa_security_guideline_aix
 =========
 
-A brief description of the role goes here.
+This is Ansible Project for checking vulnerabilities in AIX server based on [KISA(Korea Internet & Security Agency Guideline)](https://www.kisa.or.kr/public/laws/laws3_View.jsp?cPage=6&mode=view&p_No=259&b_No=259&d_No=106&ST=T&SV=).  
 
-Requirements
-------------
+>**WARNNING!**   
+>This project is only for study. and The guidelines on which this project is based were published in 2017. So please consider that there are some parts that are not correct now.
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Features
+-----------
+1. Managing Account - `account.yml`
+2. Managing File & Directory - `file_directory.yaml`
+3. Managing Services - `svc_manage.yml`
+4. Managing Patch & Log - `patch_n_log.yml`  
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Global Variables are in `defaults/main.yml`  
 
-Dependencies
-------------
+~~~
+  var_isDebug: "True"
+  apche_home_dir: ""
+~~~
+`var_isDebug` : Set `True` if you want to print debug for each task.  
+`apache_home_dir` : Set PATH if apache server runs on your target server   
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
+~~~
     - hosts: servers
       roles:
-         - { role: username.rolename, x: 42 }
+         - kisa_security_gideline_aix
+~~~
 
-License
--------
-
-BSD
 
 Author Information
 ------------------
+<img width="100" height="100" src="https://raw.githubusercontent.com/GRuuuuu/sawtooth-starter/master/sawtooth/%2303%20transaction%20processor%20tutorial/img/p.png"/>   
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Blog : [호롤리한 하루](https://gruuuuu.github.io/)
