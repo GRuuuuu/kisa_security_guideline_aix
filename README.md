@@ -3,7 +3,7 @@ kisa_security_guideline_aix
 
 This is Ansible Project for checking vulnerabilities in AIX server based on [KISA(Korea Internet & Security Agency Guideline)](https://www.kisa.or.kr/public/laws/laws3_View.jsp?cPage=6&mode=view&p_No=259&b_No=259&d_No=106&ST=T&SV=).  
 
->**WARNNING!**   
+>**WARNING!**   
 >This project is only for study. and The guidelines on which this project is based were published in 2017. So please consider that there are some parts that are not correct now.
 
 Features
