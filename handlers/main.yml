@@ -5,3 +5,8 @@ handlers:
     service:
       name: inetd
       state: restarted
+  
+  - name: Restart service httpd
+    service:
+      name: httpd
+      state: restarted
