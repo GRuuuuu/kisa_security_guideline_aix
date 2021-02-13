@@ -1,22 +1,847 @@
 ---
-# 1. Finger 서비스 비활성화
+# 3.1 Finger 서비스 비활성화 (v)
   - name: comment finger service 
-    command: sed -e 's/^[^#]\(.*\)\+\(.*\)//' -e 's/^\+\(.*\)//' /etc/hosts.equiv |tee hosts.equiv
+    command: sed -e 's/^\(finger\)\(.*\)/#\1\2/' /etc/inetd.conf |tee /etc/inetd.conf
     register: command_output
     when: ansible_distribution == 'AIX'
-    changed_when: False
-    tags: comment_finger
+    tags: 3-1_comment_finger
+    notify:
+      - Restart service inetd
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: comment_finger
+    tags: 3-1_comment_finger
 
-  - name: Restart service inetd
+
+
+
+# 3.2 Anonymous FTP 비활성화 (v)
+  - name: find "ftp" user in /etc/passwd
+    command: cat /etc/passwd |grep "ftp"
+    register: ftpuser
+    when: ansible_distribution == 'AIX'
+    ignore_errors: True
+    tags: 3-2_inactivate_ftp
+
+  - name: inactivate anonymous FTP - rmuser ftp
+    command: rmuser ftp
+    register: command_output
+    when: ansible_distribution == 'AIX' and ftpuser.stdout_lines | length > 0
+    tags: 3-2_inactivate_ftp
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-2_inactivate_ftp
+
+
+
+
+# 3.3 r계열 서비스 비활성화 (v)
+  - name: comment r service 
+    lineinfile:
+      path: /etc/inetd.conf
+      regexp: '{{item.regexp}}'
+      line: '{{item.replace}}'
+      backrefs: yes
+    with_items: 
+      - {regexp: '(.*)(\brlogin\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\brsh\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\bexec\b)(.*)', replace: '#\1\2\3'}
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-3_comment_r_service
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-3_comment_r_service
+
+
+
+
+# 3.4 cron 파일 소유자 및 권한 설정 (v)
+  - name: chown&chmod root 640 /var/adm/cron/cron.allow
+    file:
+      path: "/var/adm/cron/cron.allow"
+      owner: "root"
+      mode: 0640
+    register: command_output
+    tags: 3-4_chmod_cron_allow
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-4_chmod_cron_allow
+
+  - name: chown&chmod root 640 /var/adm/cron/cron.deny
+    file:
+      path: "/var/adm/cron/cron.deny"
+      owner: "root"
+      mode: 0640
+    register: command_output
+    tags: 3-4_chmod_cron_deny
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-4_chmod_cron_deny
+
+
+
+
+# 3.5 Dos 공격에 취약한 서비스 비활성화 (v)
+  - name: comment r service 
+    lineinfile:
+      path: /etc/inetd.conf
+      regexp: '{{item.regexp}}'
+      line: '{{item.replace}}'
+      backrefs: yes
+    loop: 
+      - {regexp: '(.*)(\bdaytime\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\becho\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\bdiscard\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\bchargen\b)(.*)', replace: '#\1\2\3'}
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-5_comment_dos_service
+    notify:
+      - Restart service inetd    
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-5_comment_dos_service  
+
+
+
+
+# 3.6 NFS 서비스 비활성화 (v)
+  - name: Stop service nfs, if started
     service:
-      name: inetd
-      state: restarted
+      name: nfs
+      state: stopped
+    tags: 3-6_inactivate_nfs_service
+
+  - name: find nfs bootscript path
+    shell: ls -al /etc/rc.d/rc2.d |grep nfs |awk '{print $9}'
+    register: nfsname
+    when: ansible_distribution == 'AIX'
+    tags: 3-6_inactivate_nfs_service
+
+  - name: change filename
+    command: mv /etc/rc.d/rc2.d/"{{item}}" /etc/rc.d/rc2.d/_"{{item}}"
+    with_items: "{{nfsname.stdout_lines}}"
+    register: command_output
+    when: nfsname.stdout_lines | length > 0
+    tags: 3-6_inactivate_nfs_service
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-6_inactivate_nfs_service
+
+
+
+    
+# 3.7 NFS 접근 통제
+# 필요한 서비스만 NFS 접근을 허용해야하는데, 필요한 서비스가 특정되어있지 않기 때문에
+# Ansible로 짜기 부적합
 
 
 
 
-# 2. Anonymous FTP 비활성화
+# 3.8 automountd 서비스 비활성화 (v)
+  - name: Stop service automountd, if started
+    service:
+      name: automountd
+      state: stopped
+    tags: 3-8_inactivate_automountd
+
+  - name: find automountd bootscript path
+    shell: ls -al /etc/rc.d/rc2.d |grep automount |awk '{print $9}'
+    register: amname
+    when: ansible_distribution == 'AIX'
+    tags: 3-8_inactivate_automountd
+
+  - name: change filename
+    command: mv /etc/rc.d/rc2.d/"{{item}}" /etc/rc.d/rc2.d/_"{{item}}"
+    with_items: "{{amname.stdout_lines}}"
+    register: command_output
+    when: amname.stdout_lines | length > 0
+    tags: 3-8_inactivate_automountd
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-8_inactivate_automountd
+
+
+
+
+# 3.9 RPC 서비스 확인
+# 불필요한 RPC서비스 비활성화
+# 특정 RPC서비스가 정의되어 있지 않으므로 부적합
+
+
+
+
+# 3.10 NIS, NIS+ 비활성화
+  - name: Stop NIS service, if started
+    service:
+      name: nis
+      state: stopped
+    tags: 3-10_inactivate_nis
+
+  - name: find nis bootscript path
+    shell: ls -al /etc/rc.d/rc2.d |grep "ypserv|ypbind|ypxfrd|rpc.yppasswdd|rpc.ypupdated" |awk '{print $9}'
+    register: nislist
+    when: ansible_distribution == 'AIX'
+    tags: 3-10_inactivate_nis
+
+  - name: change filename
+    command: mv /etc/rc.d/rc2.d/"{{item}}" /etc/rc.d/rc2.d/_"{{item}}"
+    with_items: "{{amname.stdout_lines}}"
+    register: command_output
+    when: nislist.stdout_lines | length > 0
+    tags: 3-10_inactivate_nis
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-10_inactivate_nis
+
+
+
+
+# 3.11 tftp, talk 서비스 비활성화
+  - name: comment tftp,talk service 
+    lineinfile:
+      path: /etc/inetd.conf
+      regexp: '{{item.regexp}}'
+      line: '{{item.replace}}'
+      backrefs: yes
+    loop: 
+      - {regexp: '(.*)(\tftp\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\talk\b)(.*)', replace: '#\1\2\3'}
+      - {regexp: '(.*)(\ntalk\b)(.*)', replace: '#\1\2\3'}
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-11_comment_tftp_talk
+    notify:
+      - Restart service inetd    
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-11_comment_tftp_talk  
+
+
+
+
+# 3.12 sendmail 버전 점검 (v)
+  - name: check version of sendmail
+    shell: echo \$Z | /usr/sbin/sendmail -bt -d0
+    register: version_sm
+    when: ansible_distribution == 'AIX'
+    tags: 3-12_check_sm_version
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing Service] # 12. Check Sendmail service version                         *
+        *                                                                                 *
+        * Vulnerabilities are being reported in the lower version of Sendmail.            *
+        * Check the version of Sendmail, And Please Upgrade to recent version.            *
+        * Refer -> http://www.sendmail.org/                                               *
+        ***********************************************************************************
+        {{version_sm.stdout_lines[0]}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' and version_sm | length > 0
+    tags: 3-12_check_sm_version
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-12_check_sm_version   
+
+
+
+
+# 3.13 스팸 메일 릴레이 제한 (v)
+  - name: remove comment
+    lineinfile:
+      path: /etc/mail/sendmail.cf
+      regexp: '^#(.*)("550\sRelaying\sdenied")'
+      line: '\1\2'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-13_limit_spam_relay
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-13_limit_spam_relay  
+
+  - name: create /etc/mail/access
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: /etc/mail/access
+      marker: ""
+      block: |
+        localhost.localdomain RELAY
+        localhost RELAY
+        127.0.0.1 RELAY
+        spam.com  REJECT
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-13_limit_spam_relay
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-13_limit_spam_relay   
+
+  - name: create DB file
+    shell: makemap hash /etc/mail/access.db < /etc/mail/access
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-13_limit_spam_relay
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-13_limit_spam_relay   
+
+
+
+
+# 3.14 일반 사용자의 Sendmail 실행 방지
+  - name: remove comment
+    lineinfile:
+      path: /etc/mail/sendmail.cf
+      regexp: '(.*)(PrivacyOptions)(.*)'
+      line: '\1\2\3, restrictqrun'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-14_block_userrun
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-14_block_userrun  
+
+
+
+
+# 3.15 DNS 보안 버전 패치
+# bind의 버전을 ansible_log.log에 출력해 추후에 원하는 버전으로 패치할 수 있게 함
+  - name: check version of bind
+    shell: named -v
+    register: version_nm
+    when: ansible_distribution == 'AIX'
+    tags: 3-15_check_nm_version
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing Service] # 15. Check bind service version                             *
+        *                                                                                 *
+        * Vulnerabilities are being reported in the lower version of bind.                *
+        * Check the version of bind, And Please Upgrade to recent version.                *
+        ***********************************************************************************
+        {{version_nm.stdout_lines[0]}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' and version_nm | length > 0
+    tags: 3-15_check_nm_version
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-15_check_nm_version   
+
+
+
+
+# 3.16 DNS Zone Transfer 설정
+  - name: check named service running 
+    shell: ps -ef |grep named
+    register: is_bind_running
+    when: ansible_distribution == 'AIX'
+    tags: 3-16_set_dnstransfer
+
+  - name: show allow-transfer in named.conf
+    shell: cat /etc/named.conf |grep "allow-transfer"
+    register: dns_allow_transfer
+    when: ansible_distribution == 'AIX' and is_bind_running | length > 0
+    tags: 3-16_set_dnstransfer 
+
+  - name: show xfrnets in named.boot
+    shell: cat /etc/named.boot |grep "xfrnets"
+    register: dns_xfrnets
+    when: ansible_distribution == 'AIX' and is_bind_running | length > 0
+    tags: 3-16_set_dnstransfer 
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing Service] # 16. Check DNS Zone Transfer                                *
+        *                                                                                 *
+        * Check DNS Zone below,                                                           *
+        * and Modify to prevent anyone from receiving a query response.                   *
+        ***********************************************************************************
+        {{dns_allow_transfer.stdout}}
+        {{dns_xfrnets.stdout}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' and is_bind_running | length > 0
+    tags: 3-16_set_dnstransfer
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-16_set_dnstransfer   
+
+
+
+
+# 3.17 Apache 디렉토리 리스팅 제거 (v)
+  - name: remove indexes option from httpd.conf
+    replace:
+      path: {{apache_home_dir}}/conf/httpd.conf
+      regexp: '(.*)(Options)(?=(\sIndexes))(.*)'
+      replace: '\1\2 None'
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-17_remove_indexes
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-17_remove_indexes  
+
+
+
+
+# 3.18 Apache 웹 프로세스 권한 제한 (v)
+  - name: check User permission
+    shell: grep "User" {{apache_home_dir}}/conf/httpd.conf
+    register: httpd_user
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-18_check_httpd_perm 
+
+  - name: check Group permission
+    shell: grep "Group" {{apache_home_dir}}/conf/httpd.conf
+    register: httpd_group
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} | length > 0
+    tags: 3-18_check_httpd_perm 
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing Service] # 18. Check Apache Permissions for User&Group                *
+        *                                                                                 *
+        * Check User & Group Permission below,                                            *
+        * If permissioned account is root, then Modify to another account.                *
+        ***********************************************************************************
+        {{httpd_user.stdout}}
+        {{httpd_group.stdout}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} | length > 0
+    tags: 3-18_check_httpd_perm
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-18_check_httpd_perm  
+
+
+
+
+# 3.19 Apache 상위 디렉토리 접근 금지 (v)
+  - name: replace AllowOverride None to All
+    replace:
+      path: {{apache_home_dir}}/conf/httpd.conf
+      regexp: '(.*)(AllowOverride)(?=(\sNone))(.*)'
+      replace: '\1\2 All'
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-19_remove_none
+    notify:
+      - Restart service httpd       
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-19_remove_none  
+
+
+
+
+# 3.20 Apache 불필요한 파일 제거 (v)
+  - name: delete apache manual
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - {{apache_home_dir}}/htdocs/manual
+      - {{apache_home_dir}}/manual
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-20_remove_manual
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-20_remove_manual
+
+
+
+
+# 3.21 Apache 링크 사용금지
+# 17번에서 이미 수행
+
+
+
+
+# 3.22 Apache 파일 업로드 및 다운로드 제한(5MB)
+  - name: limit LimitRequestBody
+    replace:
+      path: {{apache_home_dir}}/conf/httpd.conf
+      regexp: '(.*)(LimitRequestBody)(.*)'
+      replace: '\1\2 5000000'
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-22_limit_request
+    notify:
+      - Restart service httpd       
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-22_limit_request  
+
+
+
+
+# 3.23 Apache 웹 서비스 영역의 분리
+  - name: check DocumentRoot
+    shell: grep "DocumentRoot" {{apache_home_dir}}/conf/httpd.conf
+    register: httpd_dr
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-23_check_httpd_dr
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing Service] # 23. Check DocumentRoot in httpd.conf                       *
+        *                                                                                 *
+        * Check DocumentRoot below,                                                       *
+        * If the value belongs to any of these three,                                     *
+        *   - /usr/local/apache/htdocs                                                    *
+        *   - /usr/local/apache2/htdocs                                                   *
+        *   - /var/www/html                                                               *
+        * Change it to a specific directory path.                                         * 
+        ***********************************************************************************
+        {{httpd_dr.stdout}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' and httpd_dr |length >0 and {{apache_home_dir}} | length > 0
+    tags: 3-23_check_httpd_perm
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-23_check_httpd_perm  
+
+
+
+
+# 3.24 ssh 원격접속 허용
+  - name: check sshd is running
+    shell: lssrc -s sshd |awk '{print $4}'
+    register: sshd_status
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX'
+    tags: 3-24_activate_sshd
+
+  - name: activate sshd (if sshd is not running)
+    shell: startsrc -s sshd
+    register: command_output
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX' and sshd_status.stdout_lines[1] != 'active'
+    tags: 3-24_activate_sshd
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-24_activate_sshd  
+
+
+
+
+# 3.25 ftp 서비스 확인
+  - name: comment ftp service in /etc/inetd.conf
+    lineinfile:
+      path: /etc/inetd.conf
+      regexp: '^(ftp)(.*)'
+      line: '#\1\2'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-25_stop_ftp
+    notify:
+      - Restart service inetd
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-25_stop_ftp  
+
+
+
+
+# 3.26 ftp 계정 shell 제한
+  - name: remove shell from ftp account
+    replace:
+      path: /etc/passwd
+      regexp: '(.*)ftp:(.*):(.*):(.*):(.*):(.*):(.*)'
+      replace: '\1ftp:\2:\3:\4:\5:\6:/bin/false'
+    register: command_output
+    when: ansible_distribution == 'AIX' 
+    tags: 3-26_ftp_shell    
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-26_ftp_shell 
+
+
+
+
+# 3.27 ftpusers 파일 소유자 및 권한 설정
+  - name: chown&chmod root 640 /etc/ftpusers
+    file:
+      path: "/etc/ftpusers"
+      owner: "root"
+      mode: 0640
+    register: command_output
+    tags: 3-27_chmod_ftpusers
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-27_chmod_ftpusers
+
+
+
+
+# 3.28 ftpusers 파일 설정
+# 일반 FTP서비스 root계정 접속 제한
+  - name: limit ftp access from root account 
+    lineinfile:
+      path: /etc/ftpusers
+      line: 'root'
+      insertafter: EOF
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-28_ftpusers_root
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-28_ftpusers_root
+
+
+
+
+# 3.29 at파일 소유자 및 권한 설정
+  - name: chown&chmod root 640 /var/adm/cron/at.allow
+    file:
+      path: "/var/adm/cron/at.allow"
+      owner: "root"
+      mode: 0640
+    register: command_output
+    tags: 3-29_chmod_at
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-29_chmod_at
+
+  - name: chown&chmod root 640 /var/adm/cron/at.deny
+    file:
+      path: "/var/adm/cron/at.deny"
+      owner: "root"
+      mode: 0640
+    register: command_output
+    tags: 3-29_chmod_at
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-29_chmod_at
+
+
+
+
+# 3.30 SNMP 서비스 구동 점검
+# 사용하지 않는 SNMP서비스 중지
+  - name: Stop service snmpd, if started
+    service:
+      name: snmpd
+      state: stopped
+    tags: 3-30_inactivate_snmpd
+
+  - name: comment snmpd in /etc/rc.tcpip
+    lineinfile:
+      path: /etc/rc.tcpip
+      regexp: '[^#](start\s/usr/sbin/snmpd)(.*)'
+      line: '#\1\2'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-30_inactivate_snmpd
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-30_inactivate_snmpd  
+
+
+
+
+# 3.31 SNMP서비스 Community String의 복잡성 설정
+# community string이 public이나 private인 경우 임의의 string으로 변경
+# 어떤 string으로 변경해야하는지 정해지지 않았으므로 패스
+
+
+
+
+# 3.32 로그온 시 경고 메세지 제공
+# 서버 로그온 메세지
+  - name: set server login message  
+    lineinfile:
+      path: /etc/motd
+      line: 'hello server!'
+      insertafter: EOF
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-32_set_hello_motd
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-32_set_hello_motd
+
+# telnet 배너 설정
+  - name: set telnet login message  
+    lineinfile:
+      path: /etc/security/login.cfg
+      line: 'hello telnet!'
+      insertafter: '^default:'
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-32_set_hello_telnet
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-32_set_hello_telnet
+
+# snmp 배너 설정
+  - name: set snmp login message  
+    lineinfile:
+      path: /etc/mail/sendmail.cf
+      regexp: '(O\sSmtpGreetingMessage)=(.*)'
+      line: '\1=\"hello snmp!\"'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-32_set_hello_snmp
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-32_set_hello_snmp
+
+# dns 배너 설정
+  - name: set dns login message  
+    lineinfile:
+      path: /etc/named.conf
+      line: 'hello dns!'
+      insertafter: EOF
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-32_set_hello_dns
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-32_set_hello_dns
+
+
+
+
+# 3.33 NFS설정파일 접근권한
+  - name: chown&chmod root 644 /etc/exports
+    file:
+      path: "/etc/exports"
+      owner: "root"
+      mode: 0644
+    register: command_output
+    tags: 3-33_chmod_exports
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-33_chmod_exports
+
+
+
+
+# 3.34 expn, vrfy 명령어 제한
+  - name: limit expn vrfy
+    lineinfile:
+      path: /etc/mail/sendmail.cf
+      regexp: '(O\sPrivacyOptions)=(.*)'
+      line: '\1=authwarnings noexpn novrfy'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 3-34_limit_expn_vrfy
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-34_limit_expn_vrfy
+
+
+
+
+# 3.35 Apache 웹 서비스 정보 숨김
+  - name: set servertoken off
+    lineinfile:
+      path: {{apache_home_dir}}/conf/httpd.conf
+      regexp: '(.*)(ServerToken)'
+      line: '\1ServerToken Off'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-35_hid_apache_svc_info
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-35_hid_apache_svc_info
+
+  - name: set serversignature off
+    lineinfile:
+      path: {{apache_home_dir}}/conf/httpd.conf
+      regexp: '(.*)(ServerSignature)'
+      line: '\1ServerSignature Off'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX' and {{apache_home_dir}} |length >0
+    tags: 3-35_hid_apache_svc_info
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 3-35_hid_apache_svc_info

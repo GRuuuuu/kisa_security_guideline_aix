@@ -1,5 +1,5 @@
 ---
-# 1. root홈, 패스 디렉터리 권한 및 패스 설정
+# 2.1 root홈, 패스 디렉터리 권한 및 패스 설정
   - name: find PATH line in /etc/profile
     lineinfile:
       path: /etc/profile
@@ -8,32 +8,33 @@
     check_mode: yes
     when: ansible_distribution == 'AIX'
     register: is_PATH_Exist
+    tags: 2-1_move_dot_addProfile
 
     # for LINUX : sed -r -e 's/(.+)\.:/.:\1/' -e 's/(.)\.:/\1/g' -e 's/\.:(.+)/\1:./'
   - name: Move "." to end of the PATH (Not Exist in /etc/profile)
     command: echo $PATH |sed -e 's/\(.*\)\.:/.:\1/' -e 's/\(.\)\.:/\1/g' -e 's/\.:\(.*\)/\1:./' | tee -a /etc/profile
     register: command_output
     when: ansible_distribution == 'AIX' and not is_PATH_Exist
-    tags: move_dot_addProfile
+    tags: 2-1_move_dot_addProfile
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: move_dot_addProfile
+    tags: 2-1_move_dot_addProfile
   
   - name: Move "." to end of the PATH (Exist in /etc/profile)
     command: sed -e 's/\(PATH = \)\(.*\)\.:/\1.:\2/' -e 's/\(PATH = .*\)\.:/\1/g' -e 's/(PATH = )\.:\(.+\)/\1\2:./' /etc/profile
     register: command_output
     when: ansible_distribution == 'AIX' and is_PATH_Exist
-    tags: move_dot_modProfile
+    tags: 2-1_move_dot_addProfile
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: move_dot_modProfile
+    tags: 2-1_move_dot_addProfile
 
 
 
 
-# 2. 파일 및 폴더 소유자 설정 
+# 2.2 파일 및 폴더 소유자 설정 
 # (소유자 불분명한 파일 및 폴더 불필요한경우 삭제, 필요한경우 소유권 변경)
 # ansible로 작업하기 적합하지 않음 -> log로 출력
   - name: find file & folder which don't have owner
@@ -41,7 +42,7 @@
     register: nouser_filelist
     when: ansible_distribution == 'AIX'
     ignore_errors: True
-    tags: find_nouserfile
+    tags: 2-2_find_nouserfile
 
   - name: save file list on localhost (if exist)
     blockinfile:
@@ -60,11 +61,11 @@
     delegate_to: 127.0.0.1
     register: command_output
     when: ansible_distribution == 'AIX' and nouser_filelist.stdout | length > 0
-    tags: find_nouserfile
+    tags: 2-2_find_nouserfile
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_nouserfile      
+    tags: 2-2_find_nouserfile      
 
   - name: save file list on localhost (if Not exist)
     blockinfile:
@@ -83,112 +84,112 @@
     delegate_to: 127.0.0.1
     register: command_output
     when: ansible_distribution == 'AIX' and nouser_filelist.stdout | length <= 0  
-    tags: find_nouserfile
+    tags: 2-2_find_nouserfile
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_nouserfile      
+    tags: 2-2_find_nouserfile      
 
 
 
 
-# 3. /etc/passwd 파일 소유자 및 권한 설정
+# 2.3 /etc/passwd 파일 소유자 및 권한 설정
   - name: chown&chmod root 644 /etc/passwd
     file:
       path: "/etc/passwd"
       owner: "root"
       mode: 0644
     register: command_output
-    tags: chmod_etcpasswd
+    tags: 2-3_chmod_etcpasswd
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_etcpasswd
+    tags: 2-3_chmod_etcpasswd
 
 
  
 
-# 4. /etc/shadow 파일 소유자 및 권한 설정
+# 2.4 /etc/shadow 파일 소유자 및 권한 설정
   - name: chown&chmod root 400 /etc/security/passwd
     file:
       path: "/etc/security/passwd"
       owner: "root"
       mode: 0400
     register: command_output
-    tags: chmod_secpasswd
+    tags: 2-4_chmod_secpasswd
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_secpasswd
+    tags: 2-4_chmod_secpasswd
 
 
 
 
-# 5. /etc/hosts 파일 소유자 및 권한 설정
+# 2.5 /etc/hosts 파일 소유자 및 권한 설정
   - name: chown&chmod root 600 /etc/hosts
     file:
       path: "/etc/hosts"
       owner: "root"
       mode: 0600
     register: command_output
-    tags: chmod_hosts
+    tags: 2-5_chmod_hosts
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_hosts
+    tags: 2-5_chmod_hosts
 
 
 
 
-# 6. /etc/inetd.conf 파일 소유자 및 권한 설정
+# 2.6 /etc/inetd.conf 파일 소유자 및 권한 설정
   - name: chown&chmod root 600 /etc/inetd.conf
     file:
       path: "/etc/inetd.conf"
       owner: "root"
       mode: 0600
     register: command_output
-    tags: chmod_inetd
+    tags: 2-6_chmod_inetd
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_inetd
+    tags: 2-6_chmod_inetd
 
 
 
 
-# 7. /etc/syslog.conf 파일 소유자 및 권한 설정
+# 2.7 /etc/syslog.conf 파일 소유자 및 권한 설정
   - name: chown&chmod root 644 /etc/syslog.conf
     file:
       path: "/etc/syslog.conf"
       owner: "root"
       mode: 0644
     register: command_output
-    tags: chmod_syslog
+    tags: 2-7_chmod_syslog
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_syslog
+    tags: 2-7_chmod_syslog
 
 
 
 
-# 8. /etc/services 파일 소유자 및 권한 설정
+# 2.8 /etc/services 파일 소유자 및 권한 설정
   - name: chown&chmod root 644 /etc/services
     file:
       path: "/etc/services"
       owner: "root"
       mode: 0644
     register: command_output
-    tags: chmod_services
+    tags: 2-8_chmod_services
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: chmod_services
+    tags: 2-8_chmod_services
 
 
 
 
-# 9. SUID, SGID, Sticky bit 설정 및 권한 설정
+# 2.9 SUID, SGID, Sticky bit 설정 및 권한 설정
 # 주요 실행파일의 권한에 SUID와 SGID에 대한 설정이 부여되어있는 파일
 # 필요한 경우, 특정그룹에서만 사용하도록 제한 또는 일반 사용자의 SUID 사용을 제한
 # 어떤 경우가 필요한 경우인지 알지 못하기때문에 ansible로 부적합 -> log로 출력
@@ -197,7 +198,7 @@
     register: filelist
     when: ansible_distribution == 'AIX'
     ignore_errors: True
-    tags: find_suidsgid
+    tags: 2-9_find_suidsgid
 
   - name: save file list on localhost (if exist)
     blockinfile:
@@ -217,11 +218,11 @@
     delegate_to: 127.0.0.1
     register: command_output
     when: ansible_distribution == 'AIX' and filelist.stdout | length > 0
-    tags: find_suidsgid
+    tags: 2-9_find_suidsgid
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_suidsgid   
+    tags: 2-9_find_suidsgid   
 
   - name: save file list on localhost (if Not exist)
     blockinfile:
@@ -241,30 +242,30 @@
     delegate_to: 127.0.0.1
     register: command_output
     when: ansible_distribution == 'AIX' and filelist.stdout | length <= 0  
-    tags: find_suidsgid
+    tags: 2-9_find_suidsgid
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_suidsgid  
+    tags: 2-9_find_suidsgid  
 
 
 
 
-# 10. 사용자, 시스템 시작파일 및 환경파일 소유자 및 권한 설정
+# 2.10 사용자, 시스템 시작파일 및 환경파일 소유자 및 권한 설정
 # 홈 디렉토리 환경변수 파일의 소유자가 root또는 해당 계정으로 지정되지 않고 그 외의 사용자에 쓰기 권한이 부여된 경우
 # 설정을 적용할 파일이 특정되어있지 않고, 변경할 소유자가 특정되어있지 않기때문에 ansible로 부적합
 
 
 
 
-# 11. world writable 파일 점검
+# 2.11 world writable 파일 점검
 # 필요에 따라 삭제할 것.
   - name: find world writable file
     command: find / -type f -perm -2 -exec ls -al {} \;
     register: filelist
     when: ansible_distribution == 'AIX'
     ignore_errors: True
-    tags: find_world_writable
+    tags: 2-11_find_world_writable
 
   - name: save file list on localhost (if exist)
     blockinfile:
@@ -283,11 +284,11 @@
     delegate_to: 127.0.0.1
     register: command_output
     when: ansible_distribution == 'AIX' and filelist.stdout | length > 0
-    tags: find_world_writable
+    tags: 2-11_find_world_writable
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_world_writable
+    tags: 2-11_find_world_writable
 
   - name: save file list on localhost (if Not exist)
     blockinfile:
@@ -306,22 +307,22 @@
     delegate_to: 127.0.0.1
     register: command_output
     when: ansible_distribution == 'AIX' and filelist.stdout | length <= 0  
-    tags: find_world_writable
+    tags: 2-11_find_world_writable
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_world_writable
+    tags: 2-11_find_world_writable
 
 
 
 
-# 12. /dev에 존재하지 않는 device 파일 점검
+# 2.12 /dev에 존재하지 않는 device 파일 점검
   - name: find files which don't have major, minor number
     command: find /dev -type f -exec ls -l {} \; |grep "            " |awk '{print $9}'
     register: devfilelist
     when: ansible_distribution == 'AIX'
     ignore_errors: True
-    tags: find_dev
+    tags: 2-12_find_dev
 
   - name: remove file which don't have major, minor number
     file:
@@ -330,38 +331,38 @@
     with_items: "{{devfilelist.stdout_lines}}"
     register: command_output
     when: devfilelist.stdout_lines | length > 0
-    tags: find_dev
+    tags: 2-12_find_dev
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: find_dev
+    tags: 2-12_find_dev
 
 
 
 
-# 13. hosts.equiv 사용 금지
+# 2.13 hosts.equiv 사용 금지
   - name: chown&chmod root 600 /etc/hosts.equiv
     file:
       path: "/etc/hosts.equiv"
       owner: "root"
       mode: 0600
-    tags: change_hostsequiv
+    tags: 2-13_change_hostsequiv
 
   - name: remove '+' from hosts.equiv file 
-    command: sed -e 's/^[^#]\(.*\)\+\(.*\)//' -e 's/^\+\(.*\)//' /etc/hosts.equiv |tee hosts.equiv
+    command: sed -e 's/^[^#]\(.*\)\+\(.*\)//' -e 's/^\+\(.*\)//' /etc/hosts.equiv |tee /etc/hosts.equiv
     register: command_output
     when: ansible_distribution == 'AIX'
     changed_when: False
-    tags: change_hostsequiv
+    tags: 2-13_change_hostsequiv
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: change_hostsequiv
+    tags: 2-13_change_hostsequiv
 
 
 
 
-# 14. 접속 IP 및 포트 제한 (AIX는 default로 방화벽을 사용하지 않으므로 SKIP)
+# 2.14 접속 IP 및 포트 제한 (AIX는 default로 방화벽을 사용하지 않으므로 SKIP)
 # (불특정 다수의 ssh접근을 제한)
 #  - name: add network policy1 (iptables)
 #    iptables:
@@ -371,7 +372,7 @@
 #      destination_port: 22
 #      jump: ACCEPT
 #    when: ansible_distribution == 'AIX' and {{var_networksvc}} == 'iptables'
-#    tag: set_netplc
+#    tag: 2-14_set_netplc
 #
 #  - name: add network policy2 (iptables)
 #    iptables:
@@ -380,4 +381,106 @@
 #      destination_port: 22
 #      jump: DROP
 #    when: ansible_distribution == 'AIX' and {{var_networksvc}} == 'iptables'
-#    tag: set_netplc
+#    tag: 2-14_set_netplc
+
+
+
+
+# 2.15 host.lpd 파일 소유자 및 권한 설정
+  - name: chown&chmod root 600 host.lpd
+    file:
+      path: "/etc/hosts.lpd"
+      owner: "root"
+      mode: 0600
+    register: command_output
+    tags: 2-15_chmod_hostlpd
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 2-15_chmod_hostlpd
+
+
+# 2.16 NIS 서비스 비활성화
+# 3.10과 동일한 작업
+
+
+# 2.17 UMASK 설정 관리
+  - name: Set umask 022
+    lineinfile:
+      path: /etc/security/user
+      regexp: '(.*)umask\s=\s[^022]'
+      line: '\1umask = 022'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 2-17_set_umask
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 2-17_set_umask
+
+
+# 2.18 홈 디렉토리 소유자 및 권한 설정
+# 모든 사용자 계정이 적절한 홈 디렉토리를 갖는지 확인
+# 특정 사용자 계정이 정해진 것이 아니므로 부적합
+
+
+# 2.19 홈 디렉토리로 지정한 디렉토리의 존재 관리
+  - name: set homedir to user whose homedir is the root
+    replace:
+      path: /etc/passwd
+      regexp: '[^root](.*):(.*):(.*):(.*):(.*):/:(.*)'
+      replace: '\1:\2:\3:\4:\5:/home/\1:\6'
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 2-19_set_homedir
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 2-19_set_homedir  
+
+
+
+
+# 2.20 숨겨진 파일 및 디렉토리 검색 및 제거
+# 필요에 따라 삭제할 것.
+  - name: find hidden file
+    shell: find / -type f -name ".*"
+    register: hiddenlist1
+    when: ansible_distribution == 'AIX'
+    ignore_errors: True
+    tags: 2-20_find_hidden
+
+  - name: find hidden dir
+    shell: find / -type d -name ".*"
+    register: hiddenlist2
+    when: ansible_distribution == 'AIX'
+    ignore_errors: True
+    tags: 2-20_find_hidden
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing File & Directory] # 20. Find hidden file & directory                  *
+        *                                                                                 *
+        * This is the list of hidden file and directory in your server.                   *
+        * If you want, Remove these files or directory                                    *
+        ***********************************************************************************
+        file:
+          {{hiddenlist1.stdout}}
+        ----
+        directory:
+          {{hiddenlist1.stdout}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' 
+    tags: 2-20_find_hidden
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 2-20_find_hidden

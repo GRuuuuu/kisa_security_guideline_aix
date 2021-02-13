@@ -1,0 +1,83 @@
+# 4.1 최신 보안패치 및 벤더 권고사항 적용
+  - name: check patch list 1
+    shell: oslevel -s
+    register: patchlist1
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX'
+    tags: 4-1_check_patchlist
+
+  - name: check patch list 2
+    shell: instfix -i |grep ML
+    register: patchlist2
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX'
+    tags: 4-1_check_patchlist
+
+  - name: check patch list 3
+    shell: instfix -i |grep SP
+    register: patchlist3
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX'
+    tags: 4-1_check_patchlist
+
+  - name: save file list on localhost
+    blockinfile:
+      create: yes
+      insertafter: EOF
+      path: ~/ansible_log.log
+      marker: ""
+      block: |
+        ***********************************************************************************
+        * [Managing Patch&Log] # 1. Check Patch list                                      *
+        *                                                                                 *
+        * Check Patch list below,                                                         *
+        * Update to the latest or recommended version.                                    *
+        ***********************************************************************************
+        {{patchlist1.stdout}}
+        {{patchlist2.stdout}}
+        {{patchlist3.stdout}}
+    delegate_to: 127.0.0.1
+    register: command_output
+    when: ansible_distribution == 'AIX' and patchlist |length >0 
+    tags: 4-1_check_patchlist
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 4-1_check_patchlist  
+
+
+# 5.1 로그의 정기적 검토 및 보고
+# 시스템적인 변경사항이 아니라 로그분석에 대한 보고 체계를 수립하는 절차이므로 ansible에서 제외
+
+
+# 5.2 정책에 따른 시스템 로깅 설정
+  - name: set system logging
+    lineinfile:
+      path: /etc/syslog.conf
+      line: '{{item}}'
+      insertafter: EOF
+    with_items: 
+      - '\*\.emerg\t\*'
+      - '\*\.alert\t/dev/console'
+      - '\*\.alert\t/var/adm/alert.log'
+      - '\*\.err\t/var/adm/error.log'
+      - 'mail.info\t/var/adm/mail.log'
+      - 'auth.info\t/var/adm/auth.log'
+      - 'daemon.info\t/var/adm/daemon.log'
+      - '\*\.emerg;\*\.alert;\*\.crit;\*\.err;\*\.warning;\*\.notice;\*\.info\t/var/adm/messages'
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 5-2_set_syslog
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 5-2_set_syslog
+
+  - name: restart syslog
+    shell: refresh -s syslogd
+    when: ansible_distribution == 'AIX'
+    tags: 5-2_set_syslog
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 5-2_set_syslog

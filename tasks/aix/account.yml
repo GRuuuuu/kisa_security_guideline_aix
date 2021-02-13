@@ -1,5 +1,5 @@
 ---
-# 1. root계정 원격 접속 제한
+# 1.1 root계정 원격 접속 제한
   - name: Block remote login of Root account
     lineinfile:
       path: /etc/security/user
@@ -8,14 +8,14 @@
       backrefs: yes
     register: command_output
     when: ansible_distribution == 'AIX'
-    tags: block_root
+    tags: 1-1_block_root
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: block_root
+    tags: 1-1_block_root
 
 
-# 2. 패스워드 복잡성 설정
+# 1.2 패스워드 복잡성 설정
   - name: Set Password Complexity
     lineinfile:
       path: /etc/security/user
@@ -37,14 +37,14 @@
       - {regexp: '(\s*)pwdwarntime(\s)?=', replace: '\1pwdwarntime = 5'}
     register: command_output
     when: ansible_distribution == 'AIX'
-    tags: complex_pwd
+    tags: 1-2_complex_pwd
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: complex_pwd
+    tags: 1-2_complex_pwd
 
 
-# 3. 계정 잠금 임계값 설정
+# 1.3 계정 잠금 임계값 설정
   - name: Set threshold of failed login
     lineinfile:
       path: /etc/security/user
@@ -53,9 +53,186 @@
       backrefs: yes
     register: command_output
     when: ansible_distribution == 'AIX'
-    tags: login_threshold
+    tags: 1-3_login_threshold
   - debug:
       var: command_output
     when: "{{var_isDebug}}"
-    tags: login_threshold
+    tags: 1-3_login_threshold
 
+
+
+
+# 1.4 패스워드 파일 보호
+# AIX는 기본적으로 "/etc/security/passwd"파일에 패스워드를 암호화하여 저장하여 저장&관리
+
+
+
+
+# 1.5 root이외의 UID가 '0' 금지
+  - name: change UID not equal to root
+    replace:
+      path: /etc/passwd
+      regexp: '(.*)[^root]:(.*):0(.*)'
+      replace: '\1:\2:2002\3'
+    register: command_output
+    when: ansible_distribution == 'AIX' 
+    tags: 1-5_change_uid    
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 1-5_change_uid  
+
+
+
+
+# 1.6 root계정 su 제한
+  - name: is wheel group exist
+    shell: grep "wheel" /etc/group
+    register: wheel_exist
+    ignore_errors: yes
+    when: ansible_distribution == 'AIX'
+    tags: 1-6_limit_su
+
+  - name: create wheel group
+    shell: mkgroup wheel
+    when: ansible_distribution == 'AIX' and wheel_exist |length >0
+    tags: 1-6_limit_su
+
+  - name: change su group
+    shell: chgrp wheel /usr/bin/su
+    when: ansible_distribution == 'AIX' and wheel_exist |length >0
+    tags: 1-6_limit_su
+
+  - name: chmod su 4750 /usr/bin/su
+    file:
+      path: "/usr/bin/su"
+      mode: 4750
+    when: ansible_distribution == 'AIX' and wheel_exist |length >0
+    tags: 1-6_limit_su
+
+
+
+
+# 1.7 패스워드 최소 길이 설정
+# 1.2에서 이미 진행
+
+
+# 1.8 패스워드 최대 사용기간 설정
+# 1.2에서 이미 진행
+
+
+# 1.9 패스워드 최소 사용기간 설정
+# 1.2에서 이미 진행
+
+
+
+
+# 1.10 불필요한 계정 제거
+# 미사용 계정 및 의심스러운 계정 존재 여부 확인 후 rmuser로 삭제
+# 아래 스크립트에서는 기본적으로 차단하는 계정들 삭제
+  - name: remove accounts that are blocked by default
+    user:
+      name: {{item}}
+      state: absent
+      remove: yes
+    with_items:
+      - adm
+      - lp
+      - sync
+      - shutdown
+      - halt
+      - news
+      - uucp
+      - operator
+      - games
+      - gopher
+      - nfsnobody
+      - squid
+    when: ansible_distribution == 'AIX' 
+    register: command_output
+    tags: 1-10_remove_blockusr
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 1-10_remove_blockusr
+
+
+
+
+# 1.11 관리자 그룹에 최소한의 계정만 포함
+# system 그룹에 root 계정만 포함
+  - name: only root account in root group
+    replace:
+      path: /etc/group
+      regexp: '(.*)system:(.*):(.*):root(.*)'
+      replace: '\1system:\2:\3:root'
+    register: command_output
+    when: ansible_distribution == 'AIX' 
+    tags: 1-11_root_grp    
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 1-11_root_grp  
+
+
+
+
+# 1.12 계정이 존재하지 않는 GID금지
+# 구성원이 없거나, 더이상 사용하지 않는 그룹명삭제
+# 관리자와 검토 후 제거, 스크립트로 짜기 부적합
+
+
+
+
+# 1.13 동일한 UID 금지
+# /etc/passwd의 user중 동일한 UID를 가진 계정의 UID를 변경.
+# 고민중
+
+
+
+
+# 1.14 사용자 shell 점검
+# 아래 스크립트에서는 일반적으로 로그인이 불필요한 계정에 대해서 적용
+  - name: remove shell from account that do not require login
+    replace:
+      path: /etc/passwd
+      regexp: '(.*){{item}}:(.*):(.*):(.*):(.*):(.*):(.*)'
+      replace: '\1{{item}}:\2:\3:\4:\5:\6:/bin/false'
+    with_items:
+      - daemon
+      - bin
+      - sys
+      - adm
+      - listen
+      - nobody
+      - nobody4
+      - noaccess
+      - diag
+      - operator
+      - games
+      - gopher
+    register: command_output
+    when: ansible_distribution == 'AIX' 
+    tags: 1-14_check_shell    
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 1-14_check_shell 
+
+
+
+
+# 1.15 Session Timeout 설정
+  - name: Set Session Timeout
+    lineinfile:
+      path: /etc/profile
+      regexp: '(.*)TMOUT(.*)'
+      line: 'TMOUT=600'
+      backrefs: yes
+    register: command_output
+    when: ansible_distribution == 'AIX'
+    tags: 1-15_set_tmout
+  - debug:
+      var: command_output
+    when: "{{var_isDebug}}"
+    tags: 1-15_set_tmout
