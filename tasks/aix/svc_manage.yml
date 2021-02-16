@@ -13,8 +13,6 @@
     tags: 3-1_comment_finger
 
 
-
-
 # 3.2 Anonymous FTP 비활성화 (v)
   - name: find "ftp" user in /etc/passwd
     command: cat /etc/passwd |grep "ftp"
@@ -32,8 +30,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-2_inactivate_ftp
-
-
 
 
 # 3.3 r계열 서비스 비활성화 (v)
@@ -54,8 +50,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-3_comment_r_service
-
-
 
 
 # 3.4 cron 파일 소유자 및 권한 설정 (v)
@@ -84,8 +78,6 @@
     tags: 3-4_chmod_cron_deny
 
 
-
-
 # 3.5 Dos 공격에 취약한 서비스 비활성화 (v)
   - name: comment r service 
     lineinfile:
@@ -107,8 +99,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-5_comment_dos_service  
-
-
 
 
 # 3.6 NFS 서비스 비활성화 (v)
@@ -135,14 +125,10 @@
     when: "{{var_isDebug}}"
     tags: 3-6_inactivate_nfs_service
 
-
-
     
 # 3.7 NFS 접근 통제
 # 필요한 서비스만 NFS 접근을 허용해야하는데, 필요한 서비스가 특정되어있지 않기 때문에
 # Ansible로 짜기 부적합
-
-
 
 
 # 3.8 automountd 서비스 비활성화 (v)
@@ -170,13 +156,9 @@
     tags: 3-8_inactivate_automountd
 
 
-
-
 # 3.9 RPC 서비스 확인
 # 불필요한 RPC서비스 비활성화
 # 특정 RPC서비스가 정의되어 있지 않으므로 부적합
-
-
 
 
 # 3.10 NIS, NIS+ 비활성화
@@ -204,8 +186,6 @@
     tags: 3-10_inactivate_nis
 
 
-
-
 # 3.11 tftp, talk 서비스 비활성화
   - name: comment tftp,talk service 
     lineinfile:
@@ -226,8 +206,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-11_comment_tftp_talk  
-
-
 
 
 # 3.12 sendmail 버전 점검 (v)
@@ -260,8 +238,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-12_check_sm_version   
-
-
 
 
 # 3.13 스팸 메일 릴레이 제한 (v)
@@ -309,8 +285,6 @@
     tags: 3-13_limit_spam_relay   
 
 
-
-
 # 3.14 일반 사용자의 Sendmail 실행 방지
   - name: remove comment
     lineinfile:
@@ -325,8 +299,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-14_block_userrun  
-
-
 
 
 # 3.15 DNS 보안 버전 패치
@@ -359,8 +331,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-15_check_nm_version   
-
-
 
 
 # 3.16 DNS Zone Transfer 설정
@@ -407,8 +377,6 @@
     tags: 3-16_set_dnstransfer   
 
 
-
-
 # 3.17 Apache 디렉토리 리스팅 제거 (v)
   - name: remove indexes option from httpd.conf
     replace:
@@ -422,8 +390,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-17_remove_indexes  
-
-
 
 
 # 3.18 Apache 웹 프로세스 권한 제한 (v)
@@ -466,8 +432,6 @@
     tags: 3-18_check_httpd_perm  
 
 
-
-
 # 3.19 Apache 상위 디렉토리 접근 금지 (v)
   - name: replace AllowOverride None to All
     replace:
@@ -483,8 +447,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-19_remove_none  
-
-
 
 
 # 3.20 Apache 불필요한 파일 제거 (v)
@@ -504,12 +466,8 @@
     tags: 3-20_remove_manual
 
 
-
-
 # 3.21 Apache 링크 사용금지
 # 17번에서 이미 수행
-
-
 
 
 # 3.22 Apache 파일 업로드 및 다운로드 제한(5MB)
@@ -527,8 +485,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-22_limit_request  
-
-
 
 
 # 3.23 Apache 웹 서비스 영역의 분리
@@ -567,8 +523,6 @@
     tags: 3-23_check_httpd_perm  
 
 
-
-
 # 3.24 ssh 원격접속 허용
   - name: check sshd is running
     shell: lssrc -s sshd |awk '{print $4}'
@@ -589,8 +543,6 @@
     tags: 3-24_activate_sshd  
 
 
-
-
 # 3.25 ftp 서비스 확인
   - name: comment ftp service in /etc/inetd.conf
     lineinfile:
@@ -609,8 +561,6 @@
     tags: 3-25_stop_ftp  
 
 
-
-
 # 3.26 ftp 계정 shell 제한
   - name: remove shell from ftp account
     replace:
@@ -624,8 +574,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-26_ftp_shell 
-
-
 
 
 # 3.27 ftpusers 파일 소유자 및 권한 설정
@@ -642,8 +590,6 @@
     tags: 3-27_chmod_ftpusers
 
 
-
-
 # 3.28 ftpusers 파일 설정
 # 일반 FTP서비스 root계정 접속 제한
   - name: limit ftp access from root account 
@@ -658,8 +604,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-28_ftpusers_root
-
-
 
 
 # 3.29 at파일 소유자 및 권한 설정
@@ -688,8 +632,6 @@
     tags: 3-29_chmod_at
 
 
-
-
 # 3.30 SNMP 서비스 구동 점검
 # 사용하지 않는 SNMP서비스 중지
   - name: Stop service snmpd, if started
@@ -713,13 +655,9 @@
     tags: 3-30_inactivate_snmpd  
 
 
-
-
 # 3.31 SNMP서비스 Community String의 복잡성 설정
 # community string이 public이나 private인 경우 임의의 string으로 변경
 # 어떤 string으로 변경해야하는지 정해지지 않았으므로 패스
-
-
 
 
 # 3.32 로그온 시 경고 메세지 제공
@@ -781,8 +719,6 @@
     tags: 3-32_set_hello_dns
 
 
-
-
 # 3.33 NFS설정파일 접근권한
   - name: chown&chmod root 644 /etc/exports
     file:
@@ -795,8 +731,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-33_chmod_exports
-
-
 
 
 # 3.34 expn, vrfy 명령어 제한
@@ -813,8 +747,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 3-34_limit_expn_vrfy
-
-
 
 
 # 3.35 Apache 웹 서비스 정보 숨김

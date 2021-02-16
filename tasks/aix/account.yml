@@ -60,12 +60,8 @@
     tags: 1-3_login_threshold
 
 
-
-
 # 1.4 패스워드 파일 보호
 # AIX는 기본적으로 "/etc/security/passwd"파일에 패스워드를 암호화하여 저장하여 저장&관리
-
-
 
 
 # 1.5 root이외의 UID가 '0' 금지
@@ -81,8 +77,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 1-5_change_uid  
-
-
 
 
 # 1.6 root계정 su 제한
@@ -111,8 +105,6 @@
     tags: 1-6_limit_su
 
 
-
-
 # 1.7 패스워드 최소 길이 설정
 # 1.2에서 이미 진행
 
@@ -123,8 +115,6 @@
 
 # 1.9 패스워드 최소 사용기간 설정
 # 1.2에서 이미 진행
-
-
 
 
 # 1.10 불필요한 계정 제거
@@ -157,8 +147,6 @@
     tags: 1-10_remove_blockusr
 
 
-
-
 # 1.11 관리자 그룹에 최소한의 계정만 포함
 # system 그룹에 root 계정만 포함
   - name: only root account in root group
@@ -175,20 +163,14 @@
     tags: 1-11_root_grp  
 
 
-
-
 # 1.12 계정이 존재하지 않는 GID금지
 # 구성원이 없거나, 더이상 사용하지 않는 그룹명삭제
 # 관리자와 검토 후 제거, 스크립트로 짜기 부적합
 
 
-
-
 # 1.13 동일한 UID 금지
 # /etc/passwd의 user중 동일한 UID를 가진 계정의 UID를 변경.
 # 고민중
-
-
 
 
 # 1.14 사용자 shell 점검
@@ -218,8 +200,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 1-14_check_shell 
-
-
 
 
 # 1.15 Session Timeout 설정

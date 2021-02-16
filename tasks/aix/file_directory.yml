@@ -32,8 +32,6 @@
     tags: 2-1_move_dot_addProfile
 
 
-
-
 # 2.2 파일 및 폴더 소유자 설정 
 # (소유자 불분명한 파일 및 폴더 불필요한경우 삭제, 필요한경우 소유권 변경)
 # ansible로 작업하기 적합하지 않음 -> log로 출력
@@ -91,8 +89,6 @@
     tags: 2-2_find_nouserfile      
 
 
-
-
 # 2.3 /etc/passwd 파일 소유자 및 권한 설정
   - name: chown&chmod root 644 /etc/passwd
     file:
@@ -107,8 +103,6 @@
     tags: 2-3_chmod_etcpasswd
 
 
- 
-
 # 2.4 /etc/shadow 파일 소유자 및 권한 설정
   - name: chown&chmod root 400 /etc/security/passwd
     file:
@@ -121,8 +115,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 2-4_chmod_secpasswd
-
-
 
 
 # 2.5 /etc/hosts 파일 소유자 및 권한 설정
@@ -139,8 +131,6 @@
     tags: 2-5_chmod_hosts
 
 
-
-
 # 2.6 /etc/inetd.conf 파일 소유자 및 권한 설정
   - name: chown&chmod root 600 /etc/inetd.conf
     file:
@@ -153,8 +143,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 2-6_chmod_inetd
-
-
 
 
 # 2.7 /etc/syslog.conf 파일 소유자 및 권한 설정
@@ -171,8 +159,6 @@
     tags: 2-7_chmod_syslog
 
 
-
-
 # 2.8 /etc/services 파일 소유자 및 권한 설정
   - name: chown&chmod root 644 /etc/services
     file:
@@ -185,8 +171,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 2-8_chmod_services
-
-
 
 
 # 2.9 SUID, SGID, Sticky bit 설정 및 권한 설정
@@ -249,13 +233,9 @@
     tags: 2-9_find_suidsgid  
 
 
-
-
 # 2.10 사용자, 시스템 시작파일 및 환경파일 소유자 및 권한 설정
 # 홈 디렉토리 환경변수 파일의 소유자가 root또는 해당 계정으로 지정되지 않고 그 외의 사용자에 쓰기 권한이 부여된 경우
 # 설정을 적용할 파일이 특정되어있지 않고, 변경할 소유자가 특정되어있지 않기때문에 ansible로 부적합
-
-
 
 
 # 2.11 world writable 파일 점검
@@ -314,8 +294,6 @@
     tags: 2-11_find_world_writable
 
 
-
-
 # 2.12 /dev에 존재하지 않는 device 파일 점검
   - name: find files which don't have major, minor number
     command: find /dev -type f -exec ls -l {} \; |grep "            " |awk '{print $9}'
@@ -338,8 +316,6 @@
     tags: 2-12_find_dev
 
 
-
-
 # 2.13 hosts.equiv 사용 금지
   - name: chown&chmod root 600 /etc/hosts.equiv
     file:
@@ -358,8 +334,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 2-13_change_hostsequiv
-
-
 
 
 # 2.14 접속 IP 및 포트 제한 (AIX는 default로 방화벽을 사용하지 않으므로 SKIP)
@@ -382,8 +356,6 @@
 #      jump: DROP
 #    when: ansible_distribution == 'AIX' and {{var_networksvc}} == 'iptables'
 #    tag: 2-14_set_netplc
-
-
 
 
 # 2.15 host.lpd 파일 소유자 및 권한 설정
@@ -438,8 +410,6 @@
       var: command_output
     when: "{{var_isDebug}}"
     tags: 2-19_set_homedir  
-
-
 
 
 # 2.20 숨겨진 파일 및 디렉토리 검색 및 제거
